@@ -432,7 +432,7 @@ class PerformanceStats(object):
         """
         return self.lookback_returns.map('{:,.2%}'.format)
 
-    def plot(self, period='m', figsize=(15, 5), title=None,
+    def plot(self, period='m', figsize=(10, 4), title=None,
              logy=False, **kwargs):
         """
         Helper function for plotting the series.
@@ -451,7 +451,7 @@ class PerformanceStats(object):
         ser = self._get_series(period)
         ser.plot(figsize=figsize, title=title, logy=logy, **kwargs)
 
-    def plot_histogram(self, period='m', figsize=(15, 5), title=None,
+    def plot_histogram(self, period='m', figsize=(10, 4), title=None,
                        bins=20, **kwargs):
         """
         Plots a histogram of returns given a return period (frequency).
@@ -724,7 +724,7 @@ class GroupStats(dict):
         return self.lookback_returns.apply(
             lambda x: x.map('{:,.2%}'.format), axis=1)
 
-    def plot(self, period='m', figsize=(15, 5), title=None,
+    def plot(self, period='m', figsize=(10, 4), title=None,
              logy=False, **kwargs):
         """
         Helper function for plotting the series.
@@ -788,7 +788,7 @@ class GroupStats(dict):
         plt.suptitle(title)
 
     def plot_correlation(self, period='m', title=None,
-                         figsize=(12, 6), **kwargs):
+                         figsize=(10, 5), **kwargs):
         if title is None:
             title = '%s return correlation matrix' % get_period_name(period)
 

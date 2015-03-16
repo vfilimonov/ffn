@@ -342,6 +342,7 @@ class PerformanceStats(object):
     def _stats(self):
         stats = [('start', 'Start', 'dt'),
                  ('end', 'End', 'dt'),
+                 ('_yearly_rf', 'Risk-free rate', 'p'),
                  (None, None, None),
                  ('total_return', 'Total Return', 'p'),
                  ('daily_sharpe', 'Daily Sharpe', 'n'),
@@ -663,6 +664,7 @@ class GroupStats(dict):
     def _stats(self):
         stats = [('start', 'Start', 'dt'),
                  ('end', 'End', 'dt'),
+                 ('_yearly_rf', 'Risk-free rate', 'p'),
                  (None, None, None),
                  ('total_return', 'Total Return', 'p'),
                  ('daily_sharpe', 'Daily Sharpe', 'n'),
@@ -711,6 +713,20 @@ class GroupStats(dict):
                  ('twelve_month_win_perc', 'Win 12m %', 'p')]
 
         return stats
+
+    def set_riskfree_rate(self, rf):
+
+        """
+        Set annual risk-free rate property and calculate properly annualized
+        monthly and daily rates. Then performance stats are recalculated.
+        Affects only those instances of PerformanceStats that are children of
+        this GroupStats object.
+
+        Args:
+            * rf (float): Annual risk-free rate
+        """
+        for key in self._names:
+            self[key].set_riskfree_rate(rf)
 
     def set_date_range(self, start=None, end=None):
         """
@@ -1002,6 +1018,8 @@ def to_drawdown_series(prices):
     The max drawdown can be obtained by simply calling .min()
     on the result (since the drawdown series is negative)
 
+    Method ignores all gaps of NaN's in the price series.
+
     Args:
         * prices (TimeSeries or DataFrame): Series of prices.
 
@@ -1009,21 +1027,15 @@ def to_drawdown_series(prices):
     # make a copy so that we don't modify original data
     drawdown = prices.copy()
 
-    # set initial hwm (copy to avoid issues w/ overwriting)
-    hwm = drawdown.ix[0].copy()
-    isdf = isinstance(drawdown, pd.DataFrame)
+    # Fill NaN's with previous values
+    drawdown = drawdown.fillna(method='ffill')
 
-    for idx in drawdown.index:
-        tmp = drawdown.ix[idx]
-        if isdf:
-            hwm[tmp > hwm] = tmp
-        else:
-            hwm = max(tmp, hwm)
+    # Ignore problems with NaN's in the beginning
+    drawdown[np.isnan(drawdown)] = -np.Inf
 
-        drawdown.ix[idx] = tmp / hwm - 1
-
-    # first row is 0 by definition
-    drawdown.ix[0] = 0
+    # Rolling maximum
+    roll_max = np.maximum.accumulate(drawdown)
+    drawdown = drawdown / roll_max - 1.
     return drawdown
 
 
